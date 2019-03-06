@@ -1,0 +1,120 @@
+Demo
+- m1
+- m2
+- m3
+- m4
+====
+task1
+- m1 | - m2 | - m3 | - m4
+task2
+- m1
+- m2
+- m3
+- m4
+
+raw or command - execute the OS commands
+==============Async===============
+---
+- hosts: demo
+  become: yes
+  tasks:
+   - name: Install Apache
+     yum: pkg=httpd state=present
+     async: 10
+     poll: 3
+   - name: Start Apache
+     service: name=httpd state=started
+     register: <varname>
+   - debug: var=<varname>.<attribute>
+===============Loop========================
+---
+- hosts: demo
+  become: yes
+  tasks:
+  - name: Install
+    yum: pkg='{{item}}' state=present
+    with_items:
+     - httpd
+     - git
+  - name: create user
+    user: name='{{item}}' state=present
+    with_items:
+       - adam1
+       - adam2
+       - adam3
+=============Condition============================
+---
+- hosts: demo
+  become: yes
+  tasks:
+   - name: Install Apache
+     yum: pkg=httpd state=present
+     when: ansible_os_family == "RedHat"
+   - name: Print numbers
+     command: echo '{{item}}'
+     when: item > 4
+     with_items: [ 0, 4, 6, 7, 8, 9, 5 ]
+
+  vars:
+   epic: true
+  tasks:
+  - name: Install Apache
+     yum: pkg=httpd state=present
+     when: ansible_os_family == "RedHat"
+   - name: Print numbers
+     command: echo '{{item}}'
+     when: item > 4
+     with_items: [ 0, 4, 6, 7, 8, 9, 5 ]
+   - name: Run if variable is defined
+     command: echo "Variable is defined"
+     when: epic
+   - name: Run if variable not defined
+     command: echo "variable not defined"
+     when: not epic
+   - name: check if file exists
+     stat: path=/tmp/adam 
+     register: output
+   - debug: var=output
+   - name: run this if /tmp/adam exists
+     shell: touch /tmp/yesadamexists
+     when: output.stat.exists 
+================ERROR Handling===============
+---
+- hosts: demo
+  become: yes
+  tasks:
+   - name: Error
+     command: nosuchcommand
+     register: output
+     ignore_errors: yes
+   - name: Fail on condition
+     fail: msg="failing on purpose"
+     when: "'adam' in output.msg"
+   - name: echo hello
+     command: echo "hello"
+================WAIT_FOR================
+---
+- hosts: demo
+  become: yes
+  tasks:
+   - name: wait for apache
+     wait_for: port=80 state=started
+   - name: completed playbook
+     command: echo "==Completed=="
+===================TAGS==============
+---
+- hosts: demo
+  become: yes
+  tasks:
+   - name: first name
+     command: echo "adam"
+     tags:
+        - fname
+   - name: second name
+     command: echo "m"
+     tags:
+        - sname
+   - name: sir name
+     command: echo "noname"
+     tags:
+        - ssname
